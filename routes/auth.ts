@@ -8,18 +8,19 @@ import User from "../models/User";
 const router = express.Router();
 const refreshSecret = process.env.JWT_REFRESH_SECRET ?? "";
 const isProduction = process.env.NODE_ENV === "production";
+const sameSitePolicy = isProduction ? "none" as const : "lax" as const;
 
 const accessTokenCookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "strict" as const,
+    sameSite: sameSitePolicy,
     maxAge: 15 * 60 * 1000
 };
 
 const refreshTokenCookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "strict" as const,
+    sameSite: sameSitePolicy,
     maxAge: 7 * 24 * 60 * 60 * 1000
 };
 
