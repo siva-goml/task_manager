@@ -7,6 +7,21 @@ import User from "../models/User";
 
 const router = express.Router();
 const refreshSecret = process.env.JWT_REFRESH_SECRET ?? "";
+const isProduction = process.env.NODE_ENV === "production";
+
+const accessTokenCookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "strict" as const,
+    maxAge: 15 * 60 * 1000
+};
+
+const refreshTokenCookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "strict" as const,
+    maxAge: 7 * 24 * 60 * 60 * 1000
+};
 
 router.post("/register", async (req: Request, res: Response): Promise<void> => {
     const { username, password } = req.body ?? {};
@@ -43,13 +58,9 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
         { expiresIn: "15m" }
     );
     const refreshToken = jwt.sign({ userId: user._id }, refreshSecret, { expiresIn: "7d" });
-    res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-    res.json({ message: "Login successful", token});
+    res.cookie("accessToken", token, accessTokenCookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
+    res.json({ message: "Login successful" });
 });
 
 router.post("/refresh", (req: Request, res: Response): void => {
@@ -63,18 +74,16 @@ router.post("/refresh", (req: Request, res: Response): void => {
         const decoded = jwt.verify(refreshToken, refreshSecret);
         const userId = typeof decoded === "string" ? undefined : decoded.userId;
         const accessToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "15m" });
-        res.json({ accessToken });
+        res.cookie("accessToken", accessToken, accessTokenCookieOptions);
+        res.json({ message: "Access token refreshed" });
     } catch {
         res.status(401).json({ message: "Invalid or expired refresh token" });
     }
 });
 
 router.post("/logout", (_req: Request, res: Response): void => {
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict"
-    });
+    res.clearCookie("accessToken", accessTokenCookieOptions);
+    res.clearCookie("refreshToken", refreshTokenCookieOptions);
     res.json({ message: "Logged out successfully" });
 });
 

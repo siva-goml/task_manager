@@ -12,10 +12,13 @@ export function requireAuth(
     res: Response,
     next: NextFunction
 ): void {
+    const cookieToken = (req.cookies?.accessToken as string | undefined)
+        ?? (req.cookies?.token as string | undefined);
     const authorization = req.headers.authorization;
-    const token = authorization && authorization.startsWith("Bearer ")
+    const bearerToken = authorization && authorization.startsWith("Bearer ")
         ? authorization.slice(7)
         : null;
+    const token = cookieToken ?? bearerToken;
 
     if (!token) {
         res.status(401).json({ message: "Authentication required" });
