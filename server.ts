@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 import authRouter from "./routes/auth";
 import taskRouter from "./routes/tasks";
@@ -9,6 +10,12 @@ import taskRouter from "./routes/tasks";
 const app = express();
 const port = process.env.PORT;
 
+const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173";
+
+app.use(cors({
+    origin: [frontendUrl, "http://127.0.0.1:5173"],
+    credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(authRouter);
